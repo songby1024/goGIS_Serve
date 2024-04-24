@@ -35,8 +35,13 @@ func Router(r *gin.Engine) {
 
 	alert := r.Group("/api")
 	{
+		//围栏相关接口
 		alertService := controller.NewAlertNotice()
 		alert.GET("/alterCheck", alertService.AlertCheckCenter)
+		alert.POST("alert/add", alertService.AddGeofence)
+		alert.GET("/alert/detail", alertService.GetGeofenceById)
+		alert.GET("/alert/list", alertService.GetGeofenceList)
+		alert.POST("alert/update", alertService.UpdateGeofence)
 	}
 
 }

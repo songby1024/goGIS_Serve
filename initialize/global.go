@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"log"
 	"serve/common"
@@ -24,6 +25,17 @@ func InitRedis() *redis.Client {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+}
+
+// InitConfig 在主函数运行之前，读取配置文件
+func InitConfig() {
+	viper.SetConfigName("application-local")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/Users/iceymoss/project/gis/goGIS_Serve/config/")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalln("config read fail error = ", err)
+	}
 }
 
 func InitGlobal() {

@@ -303,3 +303,50 @@ func sendMsg(uid int64, msg []byte) {
 	}
 	zap.S().Info("数据发送socket成功")
 }
+
+func CreateGeofence(geo model.GeofenceModel) error {
+	//处理坐标
+	uid := ""
+	for _, v := range geo.ManagerIDs {
+		uid += strconv.Itoa(v) + ","
+	}
+	//清除末尾逗号
+	uid = uid[:len(uid)-1]
+
+	//处理围栏
+	boundary := ""
+	for _, v := range geo.Boundary {
+		boundary += fmt.Sprintf("%s %s,", v.Lng, v.Lat)
+	}
+	boundary = boundary[:len(boundary)-1]
+
+	alertArea := ""
+	for _, v := range geo.AlertArea {
+		alertArea += fmt.Sprintf("%s %s,", v.Lng, v.Lat)
+	}
+	alertArea = alertArea[:len(alertArea)-1]
+
+	if geo.CityName == "" {
+		geo.CityName = "未知"
+	}
+	if geo.CityCoords == nil {
+		geo.CityCoords = &model.Coordinate{
+			Lat: "120.234",
+			Lng: "31.3434",
+		}
+	}
+	return dao.CreateGeofence(geo, boundary, alertArea, uid)
+}
+
+// GetGeofenceById 获取围栏详情
+func GetGeofenceById(geoId int) model.GeofenceModel {
+	return dao.GetGeofenceById(geoId)
+}
+
+func GetGeofenceList() []model.GeofenceModel {
+	return dao.GetGeofenceList()
+}
+
+func UpdateGeofence(geoId int, name string, des string, state int, alertDist int, managerIds []int) error {
+	return dao.UpdateGeofence(geoId, name, des, state, alertDist, managerIds)
+}
