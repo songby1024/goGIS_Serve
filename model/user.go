@@ -11,6 +11,7 @@ type User struct {
 	UserName string `gorm:"column:username" json:"username"`
 	PassWord string `gorm:"column:password" json:"password"`
 	Email    string `json:"email" gorm:"column:email"`
+	Ruler    int    `json:"ruler" gorm:"column:ruler"`
 }
 
 func (User) TableName() string {

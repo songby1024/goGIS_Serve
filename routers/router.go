@@ -32,4 +32,11 @@ func Router(r *gin.Engine) {
 	// api.POST("/init", controller.InitConfig)
 	// api.GET("/query", controller.Querydb)
 	// api.GET("/qrcode", controller.GetQrcodeTicket)
+
+	alert := r.Group("/api")
+	{
+		alertService := controller.NewAlertNotice()
+		alert.GET("/alterCheck", alertService.AlertCheckCenter)
+	}
+
 }

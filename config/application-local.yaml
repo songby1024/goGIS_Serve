@@ -1,0 +1,38 @@
+# 服务启动配置
+server:
+  host: 127.0.0.1
+  post: 8000
+  addr: 127.0.0.1:8000
+
+# smtp服务配置
+smtp:
+  host: smtp.qq.com
+  post: 587
+  addr: smtp.qq.com:587
+  username: 1436949092@qq.com
+  password: yxttboeuospgigih
+
+# MySQL连接配置6
+mysql:
+  host: 127.0.0.1
+  post: 3306
+  database: web
+  username: root
+  password: 123456789
+  charset: utf8
+
+# PostgreSQL服务配置
+postgresql:
+  host: 127.0.0.1
+  post: 5432
+  database: postgres
+  username: postgres
+  password: 123456
+
+# redis服务配置
+redis:
+  host: 127.0.0.1
+  post: 6379
+  addr: 127.0.0.1:6379
+
+

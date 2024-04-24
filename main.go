@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"log"
+	"serve/initialize"
 	"serve/routers"
 )
 
@@ -20,6 +21,7 @@ func initConfig() {
 
 func main() {
 	initConfig()
+	initialize.InitGlobal()
 	r := gin.Default()
 	routers.Router(r)
 	r.Run(viper.GetString("server.host") + ":" + viper.GetString("server.post"))
