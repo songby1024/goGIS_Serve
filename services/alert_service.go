@@ -180,7 +180,7 @@ func recProc(node *Node) {
 			msg.AlertType = alertType
 			content := model.Content{
 				Id:          int(msg.GeofenceId),
-				AddressName: "机场" + tools.GetDirection(center, target) + "方向",
+				AddressName: geofenceInfo.Name + tools.GetDirection(center, target) + "方向",
 				AlertTime:   time.Now().Format("2006-01-02 15:04:05"),
 				AlertClass:  alertClass,
 				Point:       msg.Content.Point,
@@ -269,6 +269,31 @@ func recProc(node *Node) {
 			if msg.AlertType != 0 {
 				curUserNode.DataQueue <- msgStr //推送消息至管理员界面
 			}
+		}
+
+		//写入历史
+		mod := model.Model{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		lat, _ := strconv.ParseFloat(msg.Content.Point.Latitude, 64)
+		lng, _ := strconv.ParseFloat(msg.Content.Point.Longitude, 64)
+		ok := dao.CreateMessage(model.Messages{
+			Model:       mod,
+			GeoID:       uint64(msg.GeofenceId),
+			ClientID:    uint64(msg.clientId),
+			AddressName: msg.Content.AddressName,
+			AlertTime:   msg.Content.AlertTime,
+			AlertClass:  msg.Content.AlertClass,
+			AlertDic:    msg.Content.AlertDic,
+			MinDistance: msg.Content.MinDistance,
+			State:       1,
+			PointLat:    lat,
+			PointLng:    lng,
+			Name:        geofenceInfo.Name,
+		})
+		if !ok {
+			zap.S().Error("写入预警数据失败")
 		}
 	}
 }

@@ -16,7 +16,7 @@ smtp:
 mysql:
   host: 127.0.0.1
   post: 3306
-  database: web
+  database: gis_alert
   username: root
   password: 123456789
   charset: utf8

@@ -42,6 +42,12 @@ func Router(r *gin.Engine) {
 		alert.GET("/alert/detail", alertService.GetGeofenceById)
 		alert.GET("/alert/list", alertService.GetGeofenceList)
 		alert.POST("alert/update", alertService.UpdateGeofence)
+
+		//预警统计相关接口
+		messageService := controller.NewMessage()
+		alert.GET("/message/list", messageService.GetMessageList)
+		alert.GET("/message/total", messageService.GetMessageCount)
+		alert.POST("/message/update", messageService.UpdateMessageState)
 	}
 
 }
