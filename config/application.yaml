@@ -1,0 +1,38 @@
+# 服务启动配置
+server:
+  host: 127.0.0.1
+  post: 1016
+  addr: 127.0.0.1:1016
+
+# smtp服务配置
+smtp:
+  host: smtp.qq.com
+  post: 587
+  addr: smtp.qq.com:587
+  username: 1436949092@qq.com
+  password: yxttboeuospgigih
+
+# MySQL连接配置6
+mysql:
+  host: 127.0.0.1
+  post: 3306
+  database: vue3_project_data
+  username: root
+  password: 12345
+  charset: utf8
+
+# PostgreSQL服务配置
+postgresql:
+  host: 127.0.0.1
+  post: 5432
+  database: postgres
+  username: postgres
+  password: songby
+
+# redis服务配置
+redis:
+  host: 127.0.0.1
+  post: 6379
+  addr: 127.0.0.1:6379
+
+
