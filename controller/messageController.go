@@ -24,11 +24,8 @@ func (c *MessageController) GetMessageList(ctx *gin.Context) {
 	pageSize, _ := strconv.Atoi(pageSizeStr)
 	geoId, _ := strconv.Atoi(geoIdStr)
 
-	list := services.GetMessageList(geoId, page, pageSize)
-	data := map[string]interface{}{
-		"list": list,
-	}
-	response.Res200(ctx, gin.H{"msg": "succeed", "data": data})
+	res := services.GetMessageList(geoId, page, pageSize)
+	response.Res200(ctx, gin.H{"msg": "succeed", "data": res})
 }
 
 // GetMessageCount 获取预警总数和待处理总数
