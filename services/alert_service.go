@@ -44,12 +44,14 @@ type Node struct {
 	ClientId  int             //客户端唯一id
 	JoinTime  int64           //节点创建时间
 	GeoId     int             //归属围栏
+	isReal    bool            //是否在围栏内
 }
 
 type pointInfo struct {
-	point model.PointFloat
-	geoId int
-	uid   int
+	point  model.PointFloat
+	geoId  int
+	uid    int
+	isReal bool
 }
 
 // 映射关系：围栏id绑定
@@ -129,6 +131,12 @@ func recProc(node *Node) {
 			return
 		}
 
+		//注意：不处理管理员上传我位置信息，只针对普通用户
+		uDate := dao.GetUserList([]int{node.ClientId}, []string{"id", "email", "username", "ruler"})
+		if user, ok := uDate[node.ClientId]; ok && user.Ruler == 1 {
+			continue
+		}
+
 		//检查用户是否进入预警区域，预警级别：低级
 		geofenceInfo, check := dao.CheckPointInAlertRange(int(msg.GeofenceId), model.Point{
 			Latitude:  msg.Content.Point.Latitude,
@@ -142,7 +150,6 @@ func recProc(node *Node) {
 		}, "boundary")
 
 		minDistance := dao.GetMinDistanceMeters(int(msg.GeofenceId), msg.Content.Point)
-		fmt.Println("minDistance:", minDistance)
 		msg.Content.MinDistance = minDistance.MinDistanceMeters
 
 		//在预警区域，没有进入围栏内
@@ -192,24 +199,26 @@ func recProc(node *Node) {
 
 			pointLocker.Lock()
 			manyPointInfoMap[node.ClientId] = pointInfo{
-				point: target,
-				geoId: int(msg.GeofenceId),
-				uid:   node.ClientId,
+				point:  target,
+				geoId:  int(msg.GeofenceId),
+				uid:    node.ClientId,
+				isReal: true,
 			}
 			manyMeantimePointMap[msg.GeofenceId] = manyPointInfoMap
 			pointLocker.Unlock()
 
+			//获取当前在预警围栏的目标
 			loc := make([]*redis.GeoLocation, 0)
-			//写入Redis
 			for key, v := range manyMeantimePointMap[msg.GeofenceId] {
-				loc = append(loc, &redis.GeoLocation{
-					Name:      fmt.Sprintf("point%d", key),
-					Longitude: v.point.Longitude,
-					Latitude:  v.point.Latitude,
-					GeoHash:   time.Now().Unix(),
-				})
+				if v.isReal {
+					loc = append(loc, &redis.GeoLocation{
+						Name:      fmt.Sprintf("point%d", key),
+						Longitude: v.point.Longitude,
+						Latitude:  v.point.Latitude,
+						GeoHash:   time.Now().Unix(),
+					})
+				}
 			}
-			fmt.Println("当前坐标：", loc)
 
 			key := "alert:" + strconv.Itoa(int(msg.GeofenceId))
 			ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
@@ -235,10 +244,17 @@ func recProc(node *Node) {
 
 			//区域内同一时间段出现两人
 			if len(list) >= 2 {
-				msg.AlertType = 2
+				msg.AlertType = 3
 				msg.Content.AlertDic = "围栏附近存在大量人员滞留"
 				msg.Content.AlertClass = "高级"
 			}
+		} else { //当定位点走出预警区域后，需要扣除预警人员数
+			pointLocker.Lock()
+			manyPointInfoMap[node.ClientId] = pointInfo{
+				isReal: false,
+			}
+			manyMeantimePointMap[msg.GeofenceId] = manyPointInfoMap
+			pointLocker.Unlock()
 		}
 
 		msgStr, err := json.Marshal(msg)
@@ -251,8 +267,12 @@ func recProc(node *Node) {
 		userIds, _ := tools.ParseIntSliceFromString(geofenceInfo.ManagerIds)
 
 		//获取用户邮件
-		userDate := dao.GetUserList(userIds, []string{"email", "username"})
+		userDate := dao.GetUserList(userIds, []string{"id", "email", "username", "ruler"})
+
 		for _, uid := range userIds {
+			if userDate[uid].Ruler != 1 { //只发送消息至管理员
+				continue
+			}
 			curUserNode, ok := clientMap[int64(uid)]
 			if !ok && msg.AlertType != 0 { //AlertTyp：0为不预警
 				zap.S().Info("客户端掉线", msg.clientId)
