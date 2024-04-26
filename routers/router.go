@@ -48,6 +48,8 @@ func Router(r *gin.Engine) {
 		alert.GET("/message/list", messageService.GetMessageList)
 		alert.GET("/message/total", messageService.GetMessageCount)
 		alert.POST("/message/update", messageService.UpdateMessageState)
+
+		alert.GET("/getAllAdminList", controller.GetAdminList)
 	}
 
 }

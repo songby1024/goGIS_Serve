@@ -16,4 +16,5 @@ func userRouter(r *gin.RouterGroup) {
 
 	// 	发送告警信息给用户
 	r.POST("/sendEmail", controller.SendEmail)
+	//r.POST("/getAllAdminList", controller.GetAdminList)
 }

@@ -143,7 +143,7 @@ func UpdateGeofence(geoId int, name string, des string, state int, alertDist int
 	if name != "" {
 		update["name"] = name
 	}
-	if state != 0 {
+	if state >= 0 {
 		update["status"] = state
 	}
 	if des != "" {

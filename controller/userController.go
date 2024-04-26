@@ -33,11 +33,21 @@ func Login(ctx *gin.Context) {
 		return
 	}
 	// 返回成功地请求响应
-	if userLoginInfo.UserName == "admin" && userLoginInfo.PassWord == "admin" {
-		response.Res200(ctx, gin.H{"msg": "success", "role": "admin", "username": userLoginInfo.UserName})
-	} else {
-		response.Res200(ctx, gin.H{"msg": "success", "role": "user", "username": userLoginInfo.UserName})
+	//if userLoginInfo.UserName == "admin" && userLoginInfo.PassWord == "admin" {
+	//	response.Res200(ctx, gin.H{"msg": "success", "user": userLoginInfo.UserName})
+	//} else {
+	token, err := common.ReleaseToken(newUser)
+	if err != nil {
+		response.Res202(ctx, gin.H{"msg": "登录失败"})
+		return
 	}
+
+	data := map[string]interface{}{
+		"user":  newUser.ID,
+		"token": token,
+	}
+	response.Res200(ctx, gin.H{"msg": "success", "user": newUser, "token": token, "data": data})
+	//}
 }
 
 // Register 处理注册请求
@@ -123,4 +133,17 @@ func SendEmail(ctx *gin.Context) {
 		return
 	}
 	response.Res200(ctx, gin.H{"msg": "邮件发送成功"})
+}
+
+// GetAdminList 获取所有的管理员列表
+func GetAdminList(ctx *gin.Context) {
+	// 连接数据库
+	db := common.InitDB()
+	var adminList []model.User
+	err := db.Where("ruler = ?", 1).Find(&adminList).Error
+	if err != nil {
+		response.Res201(ctx, gin.H{"msg": "查询管理员列表失败", "list": ""})
+		return
+	}
+	response.Res200(ctx, gin.H{"msg": "查询成功", "list": adminList})
 }

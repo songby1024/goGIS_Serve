@@ -26,7 +26,14 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// Message 前端只需要传入：geoId，alertGeoId，clientId和当前定位point,取余字段有后端返回
+type pointInfo struct {
+	point  model.PointFloat
+	geoId  int
+	uid    int
+	isReal bool
+}
+
+// Message 前端只需要传入：geoId，alertGeoId，clientId和当前定位point,取余字段由后端返回
 type Message struct {
 	Model
 	GeofenceId int64         `json:"geoId"`      //围栏
@@ -45,13 +52,6 @@ type Node struct {
 	JoinTime  int64           //节点创建时间
 	GeoId     int             //归属围栏
 	isReal    bool            //是否在围栏内
-}
-
-type pointInfo struct {
-	point  model.PointFloat
-	geoId  int
-	uid    int
-	isReal bool
 }
 
 // 映射关系：围栏id绑定
@@ -131,7 +131,7 @@ func recProc(node *Node) {
 			return
 		}
 
-		//注意：不处理管理员上传我位置信息，只针对普通用户
+		//注意：不处理管理员上传的位置信息，只针对普通用户
 		uDate := dao.GetUserList([]int{node.ClientId}, []string{"id", "email", "username", "ruler"})
 		if user, ok := uDate[node.ClientId]; ok && user.Ruler == 1 {
 			continue
@@ -151,16 +151,16 @@ func recProc(node *Node) {
 
 		minDistance := dao.GetMinDistanceMeters(int(msg.GeofenceId), msg.Content.Point)
 		msg.Content.MinDistance = minDistance.MinDistanceMeters
-
+		fmt.Println("预警：", geofenceInfo)
 		//在预警区域，没有进入围栏内
 		if check && !onGonFence {
 			alertType := 1
 			alertDoc := "未知人员靠近围栏"
 			alertClass := "低级"
 			//检查当前用户是否长时间处于预警区, 检查缓存，不存在这写入, 时间阈值需要存储到数据库
-			//逗留一分钟，警报
+			//逗留三分钟，警报
 			now := time.Now().Unix()
-			if now-node.JoinTime > 30 {
+			if now-node.JoinTime > 60*3 {
 				alertType = 2
 				alertDoc = "围栏附近存在未知人员长期滞留"
 				alertClass = "中级"
@@ -228,7 +228,7 @@ func recProc(node *Node) {
 				return
 			}
 			list, err := global.RDB.GeoRadius(ctx, key, target.Longitude, target.Latitude, &redis.GeoRadiusQuery{
-				Radius:    5,    // 20米内
+				Radius:    5,    // 5米内
 				Unit:      "m",  // 单位为米
 				WithCoord: true, // 如果需要获取点的具体坐标可以加上这个
 			}).Result()
@@ -242,8 +242,8 @@ func recProc(node *Node) {
 				return
 			}
 
-			//区域内同一时间段出现两人
-			if len(list) >= 2 {
+			//区域内同一时间段出现三人
+			if len(list) >= 3 {
 				msg.AlertType = 3
 				msg.Content.AlertDic = "围栏附近存在大量人员滞留"
 				msg.Content.AlertClass = "高级"
@@ -279,10 +279,10 @@ func recProc(node *Node) {
 				email := userDate[uid].Email
 				name := userDate[uid].UserName
 				link := "http://www.iceymoss.top/alert/list"
-				//构造预警内容
+				//构造预警邮件内容
 				body := fmt.Sprintf("尊敬的管理员%s：\n\n您好！我们在%s监测到了以下重要预警信息，请立即查看并采取适当行动：\n\n%s别预警：%s（经纬度：%s, %s）发现不明人员长时间滞留。\n\n您可以通过以下链接访问预警详情页面:%s，以获取更多信息和可能的行动指南：\n\n点击此处访问预警详情页面\n\n请确保采取必要的预防措施保障安全。\n\n谢谢！\n\n安全监控团队", name, msg.Content.AlertTime, msg.Content.AlertClass, msg.Content.AddressName, msg.Content.Point.Longitude, msg.Content.Point.Latitude, link)
 				if err := utils.SendEMail(email, body); err != nil {
-					zap.S().Error("邮件推送失败")
+					zap.S().Error("邮件推送失败", err)
 				}
 				continue
 			}
@@ -356,7 +356,9 @@ func CreateGeofence(geo model.GeofenceModel) error {
 		uid += strconv.Itoa(v) + ","
 	}
 	//清除末尾逗号
-	uid = uid[:len(uid)-1]
+	if len(uid) > 1 {
+		uid = uid[:len(uid)-1]
+	}
 
 	//处理围栏
 	boundary := ""

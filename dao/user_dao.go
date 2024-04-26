@@ -11,7 +11,7 @@ func GetUserList(ids []int, field []string) map[int]model.User {
 	global.DB.Table("user").Select(field).Where("id in ?", ids).Find(&userList)
 	res := make(map[int]model.User)
 	for _, user := range userList {
-		res[user.Id] = user
+		res[int(user.ID)] = user
 	}
 	fmt.Println("当前用户表：", userList)
 	return res
